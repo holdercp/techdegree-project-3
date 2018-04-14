@@ -42,10 +42,13 @@ shirtColorsDiv.style = 'display: none;';
 shirtColorsSelect.removeChildNodes();
 
 shirtDesignSelect.addEventListener('change', (e) => {
-  const selectedOption = e.target.value;
+  const targetOptions = e.target.options;
+  // Grab the text past 'Theme - ', i.e. (JS Puns or I &#9829; JS) to use for searching
+  const selectedOption = targetOptions[targetOptions.selectedIndex].text.substr(8);
+
   shirtColorsSelect.removeChildNodes();
   shirtColorChoices.forEach((option) => {
-    if (option.getAttribute('data-shirt-type') === selectedOption) {
+    if (option.text.includes(selectedOption)) {
       shirtColorsSelect.appendChild(option);
     }
 
