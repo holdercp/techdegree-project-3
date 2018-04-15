@@ -9,6 +9,14 @@ HTMLElement.prototype.removeChildNodes = function removeChildNodes() {
     this.removeChild(this.firstChild);
   }
 };
+
+function removeFromArray(arr, elem) {
+  const index = arr.indexOf(elem);
+
+  if (index !== -1) {
+    arr.splice(index, 1);
+  }
+}
 // END Utility Functions
 
 /* =================================================================================================
@@ -57,3 +65,70 @@ shirtDesignSelect.addEventListener('change', (e) => {
   });
 });
 // END T-Shirt Info Fieldset
+
+/* =================================================================================================
+Activities Registration Fieldset
+================================================================================================= */
+const activitiesFieldset = document.querySelector('fieldset.activities');
+const selectedActivities = [];
+const selectedDates = [];
+
+function getActivityDate(activityText) {
+  const startIndex = activityText.indexOf(' — ') + 3;
+  const endIndex = activityText.indexOf(',');
+
+  // In this case, there is no date (looking at you Main Conference)
+  if (endIndex === -1) return '';
+  return activityText.substring(startIndex, endIndex);
+}
+
+function getActivityCost(activityText) {
+  const startIndex = activityText.indexOf('$') + 1;
+  return parseInt(activityText.substring(startIndex), 0);
+}
+
+function getSiblings(nodeArray, selectedArray) {
+  return nodeArray.filter(node => !selectedArray.includes(node));
+}
+
+function addTotalToDOM(parent) {
+  const total = document.createElement('p');
+  total.innerHTML = 'Total:$<span>0</span>';
+  return parent.appendChild(total);
+}
+
+const totalCost = addTotalToDOM(activitiesFieldset);
+const totalCostDigit = totalCost.querySelector('span');
+
+function updateTotal() {
+  totalCostDigit.innerText = selectedActivities.reduce(
+    (runningTotal, activity) => runningTotal + getActivityCost(activity.nextSibling.textContent),
+    0,
+  );
+}
+
+activitiesFieldset.addEventListener('change', (e) => {
+  const selectedActivity = e.target;
+  const selectedActivityDate = getActivityDate(selectedActivity.nextSibling.textContent);
+
+  if (selectedActivity.checked) {
+    selectedActivities.push(selectedActivity);
+    selectedDates.push(selectedActivityDate);
+  } else if (selectedActivity.checked === false) {
+    removeFromArray(selectedActivities, selectedActivity);
+    removeFromArray(selectedDates, selectedActivityDate);
+  }
+
+  const otherActivityInputs = getSiblings(
+    [...activitiesFieldset.querySelectorAll('input')],
+    selectedActivities,
+  );
+
+  otherActivityInputs.forEach((activity) => {
+    activity.disabled = selectedDates.includes(getActivityDate(activity.nextSibling.textContent));
+    if (activity.disabled) activity.checked = false;
+  });
+
+  updateTotal();
+});
+// END Activities Registration Fieldset
