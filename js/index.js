@@ -174,6 +174,28 @@ shirtDesignSelect.addEventListener('change', (e) => {
 /* =================================================================================================
 Activities Registration Fieldset
 ================================================================================================= */
+const activitiesState = {
+  addErr() {
+    const fieldsetRoot = document.querySelector('fieldset.activities');
+    const legend = fieldsetRoot.querySelector('legend');
+    // Add error classes
+    legend.classList.add('error-label');
+    // Create error msg
+    const errDiv = document.createElement('div');
+    errDiv.classList.add('error-msg');
+    errDiv.innerText = 'Please select at least one activity.';
+    legend.insertAdjacentElement('afterend', errDiv);
+  },
+  removeErr() {
+    const fieldsetRoot = document.querySelector('fieldset.activities');
+    const legend = fieldsetRoot.querySelector('legend');
+    const errorDiv = legend.nextElementSibling;
+
+    legend.classList.remove('error-label');
+    errorDiv.remove();
+  },
+  hasErr: false,
+};
 const activitiesFieldset = document.querySelector('fieldset.activities');
 const selectedActivities = [];
 const selectedDates = [];
@@ -233,6 +255,14 @@ activitiesFieldset.addEventListener('change', (e) => {
     activity.disabled = selectedDates.includes(getActivityDate(activity.getNestedText()));
     if (activity.disabled) activity.checked = false;
   });
+
+  if (selectedActivities.length === 0 && !activitiesState.hasErr) {
+    activitiesState.addErr();
+    activitiesState.hasErr = true;
+  } else if (selectedActivities.length > 0 && activitiesState.hasErr) {
+    activitiesState.removeErr();
+    activitiesState.hasErr = false;
+  }
 
   updateTotal();
 });
