@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* =================================================================================================
 Utility functions
 ================================================================================================= */
@@ -8,6 +9,10 @@ HTMLElement.prototype.removeChildNodes = function removeChildNodes() {
   while (this.firstChild) {
     this.removeChild(this.firstChild);
   }
+};
+
+HTMLElement.prototype.getNestedText = function getNestedText() {
+  return this.nextSibling.textContent;
 };
 
 function removeFromArray(arr, elem) {
@@ -102,14 +107,14 @@ const totalCostDigit = totalCost.querySelector('span');
 
 function updateTotal() {
   totalCostDigit.innerText = selectedActivities.reduce(
-    (runningTotal, activity) => runningTotal + getActivityCost(activity.nextSibling.textContent),
+    (runningTotal, activity) => runningTotal + getActivityCost(activity.getNestedText()),
     0,
   );
 }
 
 activitiesFieldset.addEventListener('change', (e) => {
   const selectedActivity = e.target;
-  const selectedActivityDate = getActivityDate(selectedActivity.nextSibling.textContent);
+  const selectedActivityDate = getActivityDate(selectedActivity.getNestedText());
 
   if (selectedActivity.checked) {
     selectedActivities.push(selectedActivity);
@@ -125,7 +130,7 @@ activitiesFieldset.addEventListener('change', (e) => {
   );
 
   otherActivityInputs.forEach((activity) => {
-    activity.disabled = selectedDates.includes(getActivityDate(activity.nextSibling.textContent));
+    activity.disabled = selectedDates.includes(getActivityDate(activity.getNestedText()));
     if (activity.disabled) activity.checked = false;
   });
 
