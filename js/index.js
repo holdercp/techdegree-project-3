@@ -28,18 +28,23 @@ function removeFromArray(arr, elem) {
 Basic Info Fieldset
 ================================================================================================= */
 const titleSelect = document.getElementById('title');
-const titleOtherInput = document.getElementById('other-title');
+
+const infoState = {
+  otherTitleElem: document.getElementById('other-title'),
+  showOtherTitle: false,
+};
+
+function updateInfoState(selectedOption) {
+  infoState.otherTitleElem.style =
+    selectedOption === 'other' ? 'display: block;' : 'display: none;';
+}
 
 document.getElementById('name').focus();
-titleOtherInput.style = 'display: none;';
+updateInfoState((titleSelect.value = 'full-stack js developer'));
 
 titleSelect.addEventListener('change', (e) => {
-  const selectedOption = e.target.value;
-  if (selectedOption === 'other') {
-    titleOtherInput.style = 'display: block;';
-  } else {
-    titleOtherInput.style = 'display: none;';
-  }
+  const selectedRole = e.target.value;
+  updateInfoState(selectedRole);
 });
 // END Basic Info Fieldset
 
@@ -180,3 +185,4 @@ paymentSelect.addEventListener('change', (e) => {
   const paymentSelection = e.target.value;
   updatePaymentState(paymentSelection);
 });
+// END Payment Fieldset
