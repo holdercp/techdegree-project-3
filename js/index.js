@@ -98,7 +98,7 @@ function getSiblings(nodeArray, selectedArray) {
 
 function addTotalToDOM(parent) {
   const total = document.createElement('p');
-  total.innerHTML = 'Total:$<span>0</span>';
+  total.innerHTML = 'Total: $<span>0</span>';
   return parent.appendChild(total);
 }
 
@@ -137,3 +137,49 @@ activitiesFieldset.addEventListener('change', (e) => {
   updateTotal();
 });
 // END Activities Registration Fieldset
+
+/* =================================================================================================
+Payment Fieldset
+================================================================================================= */
+const paymentSelect = document.getElementById('payment');
+
+const paymentState = {
+  creditCard: {
+    id: 'credit-card',
+    elem: document.getElementById('credit-card'),
+    selectorVal: 'credit card',
+    active: true,
+  },
+  paypal: {
+    id: 'paypal',
+    elem: document.getElementById('paypal'),
+    selectorVal: 'paypal',
+    active: false,
+  },
+  bitcoin: {
+    id: 'bitcoin',
+    elem: document.getElementById('bitcoin'),
+    selectorVal: 'bitcoin',
+    active: false,
+  },
+};
+
+function updatePaymentState(selectedPayment = 'credit card') {
+  Object.entries(paymentState).forEach((paymentType) => {
+    const paymentObj = paymentType[1];
+    if (paymentObj.selectorVal === selectedPayment) {
+      paymentObj.active = true;
+    } else {
+      paymentObj.active = false;
+    }
+
+    paymentObj.elem.style = paymentObj.active ? 'display: block;' : 'display: none;';
+  });
+}
+
+updatePaymentState();
+
+paymentSelect.addEventListener('change', (e) => {
+  const paymentSelection = e.target.value;
+  updatePaymentState(paymentSelection);
+});
