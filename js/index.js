@@ -166,18 +166,15 @@ const paymentState = {
 
 function updatePaymentState(selectedPayment = 'credit card') {
   Object.entries(paymentState).forEach((paymentType) => {
+    // Object.entries creates an array with key, value so paymentType[1] contains the object we want
     const paymentObj = paymentType[1];
-    if (paymentObj.selectorVal === selectedPayment) {
-      paymentObj.active = true;
-    } else {
-      paymentObj.active = false;
-    }
-
+    paymentObj.active = paymentObj.selectorVal === selectedPayment;
     paymentObj.elem.style = paymentObj.active ? 'display: block;' : 'display: none;';
   });
 }
 
-updatePaymentState();
+// Simultaneously set payment selection to creadit card and update state
+updatePaymentState((paymentSelect.value = 'credit card'));
 
 paymentSelect.addEventListener('change', (e) => {
   const paymentSelection = e.target.value;
