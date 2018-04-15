@@ -15,6 +15,25 @@ HTMLElement.prototype.getNestedText = function getNestedText() {
   return this.nextSibling.textContent;
 };
 
+HTMLElement.prototype.addErr = function addErr(msg) {
+  // Add error classes
+  this.previousElementSibling.classList.add('error-label');
+  this.classList.add('error-input');
+  // Create error msg
+  const errDiv = document.createElement('div');
+  errDiv.classList.add('error-msg');
+  errDiv.innerText = msg;
+  return this.insertAdjacentElement('afterend', errDiv);
+};
+
+HTMLElement.prototype.removeErr = function removeErr() {
+  // Remove error classes
+  this.previousElementSibling.classList.remove('error-label');
+  this.classList.remove('error-input');
+  // Remove error msg
+  this.nextElementSibling.remove();
+};
+
 function removeFromArray(arr, elem) {
   const index = arr.indexOf(elem);
 
@@ -22,29 +41,105 @@ function removeFromArray(arr, elem) {
     arr.splice(index, 1);
   }
 }
+
 // END Utility Functions
+
+/* =================================================================================================
+Form State
+================================================================================================= */
+const formState = {
+  valid: false,
+};
+// document.addEventListener();
+// END Form State
 
 /* =================================================================================================
 Basic Info Fieldset
 ================================================================================================= */
-const titleSelect = document.getElementById('title');
-
 const infoState = {
-  otherTitleElem: document.getElementById('other-title'),
-  showOtherTitle: false,
+  name: {
+    elem: document.getElementById('name'),
+    isValid() {
+      return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
+    },
+    hasErr: false,
+  },
+  email: {
+    elem: document.getElementById('mail'),
+    isValid() {
+      const regEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return regEx.test(String(this.elem.value).toLowerCase());
+    },
+    hasErr: false,
+  },
+  otherTitle: {
+    elem: document.getElementById('other-title'),
+    isValid() {
+      return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
+    },
+    hasErr: false,
+    show: false,
+  },
 };
 
-function updateInfoState(selectedOption) {
-  infoState.otherTitleElem.style =
-    selectedOption === 'other' ? 'display: block;' : 'display: none;';
+const nameInput = infoState.name.elem;
+const emailInput = infoState.email.elem;
+const titleSelect = document.getElementById('title');
+const otherTitleInput = infoState.otherTitle.elem;
+
+function updateTitleField(selectedOption) {
+  const { otherTitle } = infoState;
+
+  otherTitle.show = selectedOption === 'other';
+  otherTitle.elem.style = otherTitle.show ? 'display: block' : 'display: none';
+
+  if (otherTitle.show === false && otherTitle.hasErr) {
+    otherTitle.elem.value = '';
+    otherTitle.elem.removeErr();
+    otherTitle.hasErr = false;
+  }
 }
 
-document.getElementById('name').focus();
-updateInfoState((titleSelect.value = 'full-stack js developer'));
+// TODO: Figure out way to keep focus from triggering event on load
+// nameInput.focus();
+updateTitleField((titleSelect.value = 'full-stack js developer'));
 
 titleSelect.addEventListener('change', (e) => {
   const selectedRole = e.target.value;
-  updateInfoState(selectedRole);
+  updateTitleField(selectedRole);
+});
+
+nameInput.addEventListener('keyup', () => {
+  const { name } = infoState;
+  if (name.isValid() && name.hasErr) {
+    nameInput.removeErr();
+    name.hasErr = false;
+  } else if (!name.isValid() && !name.hasErr) {
+    nameInput.addErr('This field cannot be blank, or begin with a space.');
+    name.hasErr = true;
+  }
+});
+
+emailInput.addEventListener('keyup', () => {
+  const { email } = infoState;
+  if (email.isValid() && email.hasErr) {
+    emailInput.removeErr();
+    email.hasErr = false;
+  } else if (!email.isValid() && !email.hasErr) {
+    emailInput.addErr('Please provide a valid email address.');
+    email.hasErr = true;
+  }
+});
+
+otherTitleInput.addEventListener('keyup', () => {
+  const { otherTitle } = infoState;
+  if (otherTitle.isValid() && otherTitle.hasErr) {
+    otherTitleInput.removeErr();
+    otherTitle.hasErr = false;
+  } else if (!otherTitle.isValid() && !otherTitle.hasErr) {
+    otherTitleInput.addErr('This field cannot be blank, or begin with a space.');
+    otherTitle.hasErr = true;
+  }
 });
 // END Basic Info Fieldset
 
