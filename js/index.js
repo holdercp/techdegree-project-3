@@ -41,17 +41,7 @@ function removeFromArray(arr, elem) {
     arr.splice(index, 1);
   }
 }
-
 // END Utility Functions
-
-/* =================================================================================================
-Form State
-================================================================================================= */
-const formState = {
-  valid: false,
-};
-// document.addEventListener();
-// END Form State
 
 /* =================================================================================================
 Basic Info Fieldset
@@ -272,13 +262,72 @@ activitiesFieldset.addEventListener('change', (e) => {
 Payment Fieldset
 ================================================================================================= */
 const paymentSelect = document.getElementById('payment');
+const onlyDigits = /^\d+$/;
 
 const paymentState = {
   creditCard: {
     id: 'credit-card',
     elem: document.getElementById('credit-card'),
+    num: {
+      elem: document.getElementById('cc-num'),
+      hasErr: false,
+    },
+    zip: {
+      elem: document.getElementById('zip'),
+      hasErr: false,
+    },
+    cvv: {
+      elem: document.getElementById('cvv'),
+      hasErr: false,
+    },
+    expiration: {
+      expMonthElem: document.getElementById('exp-month'),
+      expYearElem: document.getElementById('exp-year'),
+      hasErr: false,
+    },
     selectorVal: 'credit card',
     active: true,
+    getDate() {
+      const monthOptions = this.expiration.expMonthElem.options;
+      const yearOptions = this.expiration.expYearElem.options;
+      const month = monthOptions[monthOptions.selectedIndex].value;
+      const year = yearOptions[yearOptions.selectedIndex].value;
+
+      return year + month;
+    },
+    isValidZip() {
+      const code = this.zip.elem.value;
+      return onlyDigits.test(code) && code.length === 5;
+    },
+    isValidNum() {
+      // Just checking for length and number, not actual validity
+      const num = this.num.elem.value;
+      return onlyDigits.test(num) && (num.length >= 13 && num.length <= 16);
+    },
+    isValidCvv() {
+      const cvv = this.cvv.elem.value;
+      return onlyDigits.test(cvv) && cvv.length === 3;
+    },
+    isValid() {
+      return this.isValidZip() && this.isValidNum() && this.isValidCvv();
+    },
+    addErr(elem, msg) {
+      // Add error classes
+      elem.previousElementSibling.classList.add('error-label');
+      elem.classList.add('error-input');
+      // Create error msg
+      const errDiv = document.createElement('div');
+      errDiv.classList.add('error-msg');
+      errDiv.innerText = msg;
+      return elem.insertAdjacentElement('afterend', errDiv);
+    },
+    removeErr(elem) {
+      // Remove error classes
+      elem.previousElementSibling.classList.remove('error-label');
+      elem.classList.remove('error-input');
+      // Remove error msg
+      elem.nextElementSibling.remove();
+    },
   },
   paypal: {
     id: 'paypal',
@@ -293,6 +342,12 @@ const paymentState = {
     active: false,
   },
 };
+
+const zipInput = paymentState.creditCard.zip.elem;
+const numInput = paymentState.creditCard.num.elem;
+const cvvInput = paymentState.creditCard.cvv.elem;
+const expMonthSelect = paymentState.creditCard.expiration.expMonthElem;
+const expYearSelect = paymentState.creditCard.expiration.expYearElem;
 
 function updatePaymentState(selectedPayment = 'credit card') {
   Object.entries(paymentState).forEach((paymentType) => {
@@ -309,5 +364,75 @@ updatePaymentState((paymentSelect.value = 'credit card'));
 paymentSelect.addEventListener('change', (e) => {
   const paymentSelection = e.target.value;
   updatePaymentState(paymentSelection);
+});
+
+zipInput.addEventListener('keyup', () => {
+  const { creditCard } = paymentState;
+  const { zip } = creditCard;
+  if (!creditCard.isValidZip() && !zip.hasErr) {
+    creditCard.addErr(zip.elem, 'Please use a 5 digit zipcode.');
+    zip.hasErr = true;
+  } else if (creditCard.isValidZip() && zip.hasErr) {
+    creditCard.removeErr(zip.elem);
+    zip.hasErr = false;
+  }
+});
+
+numInput.addEventListener('keyup', () => {
+  const { creditCard } = paymentState;
+  const { num } = creditCard;
+  if (!creditCard.isValidNum() && !num.hasErr) {
+    creditCard.addErr(num.elem, 'Please use a number between 13 and 16 digits.');
+    num.hasErr = true;
+  } else if (creditCard.isValidNum() && num.hasErr) {
+    creditCard.removeErr(num.elem);
+    num.hasErr = false;
+  }
+});
+
+cvvInput.addEventListener('keyup', () => {
+  const { creditCard } = paymentState;
+  const { cvv } = creditCard;
+  if (!creditCard.isValidCvv() && !cvv.hasErr) {
+    creditCard.addErr(cvv.elem, 'Please use a CVV that is 3 digits.');
+    cvv.hasErr = true;
+  } else if (creditCard.isValidCvv() && cvv.hasErr) {
+    creditCard.removeErr(cvv.elem);
+    cvv.hasErr = false;
+  }
+});
+
+expMonthSelect.addEventListener('change', (e) => {
+  const { creditCard } = paymentState;
+  const { expiration } = creditCard;
+  const selectedDate = paymentState.creditCard.getDate();
+  const currentDate = new Date();
+  const formattedDate =
+    currentDate.getFullYear().toString() + (currentDate.getMonth() + 1).toString();
+
+  if (selectedDate < formattedDate && !expiration.hasErr) {
+    creditCard.addErr(expiration.expMonthElem, 'Please select a date in the future.');
+    expiration.hasErr = true;
+  } else if (selectedDate >= formattedDate && expiration.hasErr) {
+    creditCard.removeErr(expiration.expMonthElem);
+    expiration.hasErr = false;
+  }
+});
+
+expYearSelect.addEventListener('change', (e) => {
+  const { creditCard } = paymentState;
+  const { expiration } = creditCard;
+  const selectedDate = paymentState.creditCard.getDate();
+  const currentDate = new Date();
+  const formattedDate =
+    currentDate.getFullYear().toString() + (currentDate.getMonth() + 1).toString();
+
+  if (selectedDate < formattedDate && !expiration.hasErr) {
+    creditCard.addErr(expiration.expMonthElem, 'Please select a date in the future.');
+    expiration.hasErr = true;
+  } else if (selectedDate >= formattedDate && expiration.hasErr) {
+    creditCard.removeErr(expiration.expMonthElem);
+    expiration.hasErr = false;
+  }
 });
 // END Payment Fieldset
