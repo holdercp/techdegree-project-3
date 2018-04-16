@@ -44,41 +44,58 @@ function removeFromArray(arr, elem) {
 // END Utility Functions
 
 /* =================================================================================================
+Form
+================================================================================================= */
+function validateField(fieldObj) {
+  if (fieldObj.isValid() && fieldObj.hasErr) {
+    fieldObj.elem.removeErr();
+    fieldObj.hasErr = false;
+  } else if (!fieldObj.isValid() && !fieldObj.hasErr) {
+    fieldObj.elem.addErr(fieldObj.errMsg);
+    fieldObj.hasErr = true;
+  }
+}
+// END Form
+
+/* =================================================================================================
 Basic Info Fieldset
 ================================================================================================= */
-const infoState = {
+// Create field objects
+const infoFields = {
   name: {
     elem: document.getElementById('name'),
     isValid() {
       return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
     },
     hasErr: false,
+    errMsg: 'This field cannot be blank, or begin with a space.',
   },
-  email: {
+  mail: {
     elem: document.getElementById('mail'),
     isValid() {
-      const regEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      const regEx = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
       return regEx.test(String(this.elem.value).toLowerCase());
     },
     hasErr: false,
+    errMsg: 'Please provide a valid email address.',
   },
   otherTitle: {
-    elem: document.getElementById('other-title'),
+    elem: document.getElementById('otherTitle'),
     isValid() {
       return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
     },
     hasErr: false,
+    errMsg: 'This field cannot be blank, or begin with a space.',
     show: false,
   },
 };
 
-const nameInput = infoState.name.elem;
-const emailInput = infoState.email.elem;
+// Get parent
+const basicInfoFieldset = document.querySelector('fieldset.basic');
 const titleSelect = document.getElementById('title');
-const otherTitleInput = infoState.otherTitle.elem;
 
 function updateTitleField(selectedOption) {
-  const { otherTitle } = infoState;
+  const { otherTitle } = infoFields;
 
   otherTitle.show = selectedOption === 'other';
   otherTitle.elem.style = otherTitle.show ? 'display: block' : 'display: none';
@@ -90,47 +107,19 @@ function updateTitleField(selectedOption) {
   }
 }
 
-// TODO: Figure out way to keep focus from triggering event on load
-// nameInput.focus();
+infoFields.name.elem.focus();
 updateTitleField((titleSelect.value = 'full-stack js developer'));
+
+basicInfoFieldset.addEventListener('keyup', (e) => {
+  const fieldObj = infoFields[e.target.id];
+  validateField(fieldObj);
+});
 
 titleSelect.addEventListener('change', (e) => {
   const selectedRole = e.target.value;
   updateTitleField(selectedRole);
 });
 
-nameInput.addEventListener('keyup', () => {
-  const { name } = infoState;
-  if (name.isValid() && name.hasErr) {
-    nameInput.removeErr();
-    name.hasErr = false;
-  } else if (!name.isValid() && !name.hasErr) {
-    nameInput.addErr('This field cannot be blank, or begin with a space.');
-    name.hasErr = true;
-  }
-});
-
-emailInput.addEventListener('keyup', () => {
-  const { email } = infoState;
-  if (email.isValid() && email.hasErr) {
-    emailInput.removeErr();
-    email.hasErr = false;
-  } else if (!email.isValid() && !email.hasErr) {
-    emailInput.addErr('Please provide a valid email address.');
-    email.hasErr = true;
-  }
-});
-
-otherTitleInput.addEventListener('keyup', () => {
-  const { otherTitle } = infoState;
-  if (otherTitle.isValid() && otherTitle.hasErr) {
-    otherTitleInput.removeErr();
-    otherTitle.hasErr = false;
-  } else if (!otherTitle.isValid() && !otherTitle.hasErr) {
-    otherTitleInput.addErr('This field cannot be blank, or begin with a space.');
-    otherTitle.hasErr = true;
-  }
-});
 // END Basic Info Fieldset
 
 /* =================================================================================================
