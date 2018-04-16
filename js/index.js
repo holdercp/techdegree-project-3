@@ -15,22 +15,22 @@ HTMLElement.prototype.getNestedText = function getNestedText() {
   return this.nextSibling.textContent;
 };
 
-HTMLElement.prototype.addErr = function addErr(msg, label, textInput = true) {
+HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
   // Add error classes
   label.classList.add('error-label');
   if (textInput) this.classList.add('error-input');
   // Create error msg
   const errDiv = document.createElement('div');
   errDiv.classList.add('error-msg');
-  errDiv.setAttribute('data-field', this.id);
+  errDiv.setAttribute('data-field', id);
   errDiv.innerText = msg;
   return label.insertAdjacentElement('afterend', errDiv);
 };
 
-HTMLElement.prototype.removeErr = function removeErr(label) {
+HTMLElement.prototype.removeErr = function removeErr(id, label) {
   // Remove error classes
   label.classList.remove('error-label');
-  document.querySelector(`div[data-field=${this.id}`).remove();
+  document.querySelector(`div[data-field=${id}`).remove();
   if (this.classList.contains('error-input')) this.classList.remove('error-input');
 };
 
@@ -46,12 +46,12 @@ function removeFromArray(arr, elem) {
 /* =================================================================================================
 Form
 ================================================================================================= */
-function validateField(fieldObj) {
+function validateField(fieldObj, textInput = true) {
   if (fieldObj.isValid() && fieldObj.hasErr) {
-    fieldObj.elem.removeErr(fieldObj.labelElem);
+    fieldObj.elem.removeErr(fieldObj.id, fieldObj.labelElem);
     fieldObj.hasErr = false;
   } else if (!fieldObj.isValid() && !fieldObj.hasErr) {
-    fieldObj.elem.addErr(fieldObj.errMsg, fieldObj.labelElem);
+    fieldObj.elem.addErr(fieldObj.id, fieldObj.errMsg, fieldObj.labelElem, textInput);
     fieldObj.hasErr = true;
   }
 }
@@ -63,6 +63,7 @@ Basic Info Fieldset
 // Create field objects
 const infoFields = {
   name: {
+    id: 'name',
     elem: document.getElementById('name'),
     isValid() {
       return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
@@ -72,6 +73,7 @@ const infoFields = {
     labelElem: document.querySelector('label[for="name"]'),
   },
   mail: {
+    id: 'name',
     elem: document.getElementById('mail'),
     isValid() {
       const regEx = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -82,6 +84,7 @@ const infoFields = {
     labelElem: document.querySelector('label[for="mail"]'),
   },
   otherTitle: {
+    id: 'name',
     elem: document.getElementById('otherTitle'),
     isValid() {
       return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
@@ -156,31 +159,19 @@ shirtDesignSelect.addEventListener('change', (e) => {
 /* =================================================================================================
 Activities Registration Fieldset
 ================================================================================================= */
-const activitiesState = {
-  addErr() {
-    const fieldsetRoot = document.querySelector('fieldset.activities');
-    const legend = fieldsetRoot.querySelector('legend');
-    // Add error classes
-    legend.classList.add('error-label');
-    // Create error msg
-    const errDiv = document.createElement('div');
-    errDiv.classList.add('error-msg');
-    errDiv.innerText = 'Please select at least one activity.';
-    legend.insertAdjacentElement('afterend', errDiv);
-  },
-  removeErr() {
-    const fieldsetRoot = document.querySelector('fieldset.activities');
-    const legend = fieldsetRoot.querySelector('legend');
-    const errorDiv = legend.nextElementSibling;
+const activitiesFieldset = {
+  id: 'activities',
+  elem: document.querySelector('fieldset.activities'),
+  selectedActivities: [],
+  selectedDates: [],
 
-    legend.classList.remove('error-label');
-    errorDiv.remove();
+  isValid() {
+    return this.selectedActivities.length > 0;
   },
   hasErr: false,
+  errMsg: 'Please select at least one activity.',
 };
-const activitiesFieldset = document.querySelector('fieldset.activities');
-const selectedActivities = [];
-const selectedDates = [];
+activitiesFieldset.labelElem = activitiesFieldset.elem.querySelector('legend');
 
 function getActivityDate(activityText) {
   const startIndex = activityText.indexOf(' — ') + 3;
@@ -206,19 +197,20 @@ function addTotalToDOM(parent) {
   return parent.appendChild(total);
 }
 
-const totalCost = addTotalToDOM(activitiesFieldset);
+const totalCost = addTotalToDOM(activitiesFieldset.elem);
 const totalCostDigit = totalCost.querySelector('span');
 
 function updateTotal() {
-  totalCostDigit.innerText = selectedActivities.reduce(
+  totalCostDigit.innerText = activitiesFieldset.selectedActivities.reduce(
     (runningTotal, activity) => runningTotal + getActivityCost(activity.getNestedText()),
     0,
   );
 }
 
-activitiesFieldset.addEventListener('change', (e) => {
+activitiesFieldset.elem.addEventListener('change', (e) => {
   const selectedActivity = e.target;
   const selectedActivityDate = getActivityDate(selectedActivity.getNestedText());
+  const { selectedActivities, selectedDates } = activitiesFieldset;
 
   if (selectedActivity.checked) {
     selectedActivities.push(selectedActivity);
@@ -229,23 +221,16 @@ activitiesFieldset.addEventListener('change', (e) => {
   }
 
   const otherActivityInputs = getSiblings(
-    [...activitiesFieldset.querySelectorAll('input')],
-    selectedActivities,
+    [...activitiesFieldset.elem.querySelectorAll('input')],
+    activitiesFieldset.selectedActivities,
   );
 
   otherActivityInputs.forEach((activity) => {
-    activity.disabled = selectedDates.includes(getActivityDate(activity.getNestedText()));
+    activity.disabled = activitiesFieldset.selectedDates.includes(getActivityDate(activity.getNestedText()));
     if (activity.disabled) activity.checked = false;
   });
 
-  if (selectedActivities.length === 0 && !activitiesState.hasErr) {
-    activitiesState.addErr();
-    activitiesState.hasErr = true;
-  } else if (selectedActivities.length > 0 && activitiesState.hasErr) {
-    activitiesState.removeErr();
-    activitiesState.hasErr = false;
-  }
-
+  validateField(activitiesFieldset, false);
   updateTotal();
 });
 // END Activities Registration Fieldset
