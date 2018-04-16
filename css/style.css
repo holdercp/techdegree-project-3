@@ -117,13 +117,12 @@ button:hover {
   color: #d32f2f;
   font-size: 0.8em;
   font-style: italic;
-  margin-bottom: 1.25em;
-  margin-top: -0.8em;
 }
 
 .error-input,
 .error-input:focus {
-  border: 3px solid #d32f2f;
+  background-color: #ffebee;
+  border-color: #d32f2f;
 }
 
 .error-label {

@@ -15,23 +15,23 @@ HTMLElement.prototype.getNestedText = function getNestedText() {
   return this.nextSibling.textContent;
 };
 
-HTMLElement.prototype.addErr = function addErr(msg) {
+HTMLElement.prototype.addErr = function addErr(msg, label, textInput = true) {
   // Add error classes
-  this.previousElementSibling.classList.add('error-label');
-  this.classList.add('error-input');
+  label.classList.add('error-label');
+  if (textInput) this.classList.add('error-input');
   // Create error msg
   const errDiv = document.createElement('div');
   errDiv.classList.add('error-msg');
+  errDiv.setAttribute('data-field', this.id);
   errDiv.innerText = msg;
-  return this.insertAdjacentElement('afterend', errDiv);
+  return label.insertAdjacentElement('afterend', errDiv);
 };
 
-HTMLElement.prototype.removeErr = function removeErr() {
+HTMLElement.prototype.removeErr = function removeErr(label) {
   // Remove error classes
-  this.previousElementSibling.classList.remove('error-label');
-  this.classList.remove('error-input');
-  // Remove error msg
-  this.nextElementSibling.remove();
+  label.classList.remove('error-label');
+  document.querySelector(`div[data-field=${this.id}`).remove();
+  if (this.classList.contains('error-input')) this.classList.remove('error-input');
 };
 
 function removeFromArray(arr, elem) {
@@ -48,10 +48,10 @@ Form
 ================================================================================================= */
 function validateField(fieldObj) {
   if (fieldObj.isValid() && fieldObj.hasErr) {
-    fieldObj.elem.removeErr();
+    fieldObj.elem.removeErr(fieldObj.labelElem);
     fieldObj.hasErr = false;
   } else if (!fieldObj.isValid() && !fieldObj.hasErr) {
-    fieldObj.elem.addErr(fieldObj.errMsg);
+    fieldObj.elem.addErr(fieldObj.errMsg, fieldObj.labelElem);
     fieldObj.hasErr = true;
   }
 }
@@ -69,6 +69,7 @@ const infoFields = {
     },
     hasErr: false,
     errMsg: 'This field cannot be blank, or begin with a space.',
+    labelElem: document.querySelector('label[for="name"]'),
   },
   mail: {
     elem: document.getElementById('mail'),
@@ -78,6 +79,7 @@ const infoFields = {
     },
     hasErr: false,
     errMsg: 'Please provide a valid email address.',
+    labelElem: document.querySelector('label[for="mail"]'),
   },
   otherTitle: {
     elem: document.getElementById('otherTitle'),
@@ -86,6 +88,7 @@ const infoFields = {
     },
     hasErr: false,
     errMsg: 'This field cannot be blank, or begin with a space.',
+    labelElem: document.querySelector('label[for="title"]'),
     show: false,
   },
 };
@@ -102,7 +105,7 @@ function updateTitleField(selectedOption) {
 
   if (otherTitle.show === false && otherTitle.hasErr) {
     otherTitle.elem.value = '';
-    otherTitle.elem.removeErr();
+    otherTitle.elem.removeErr(otherTitle.labelElem);
     otherTitle.hasErr = false;
   }
 }
