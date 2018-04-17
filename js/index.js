@@ -44,20 +44,6 @@ function removeFromArray(arr, elem) {
 // END Utility Functions
 
 /* =================================================================================================
-Form
-================================================================================================= */
-function validateField(fieldObj, textInput = true) {
-  if (fieldObj.isValid() && fieldObj.hasErr) {
-    fieldObj.elem.removeErr(fieldObj.id, fieldObj.labelElem);
-    fieldObj.hasErr = false;
-  } else if (!fieldObj.isValid() && !fieldObj.hasErr) {
-    fieldObj.elem.addErr(fieldObj.id, fieldObj.errMsg, fieldObj.labelElem, textInput);
-    fieldObj.hasErr = true;
-  }
-}
-// END Form
-
-/* =================================================================================================
 Basic Info Fieldset
 ================================================================================================= */
 // Create field objects
@@ -350,3 +336,66 @@ creditCardFields.addEventListener('keyup', (e) => {
   validateField(fieldObj);
 });
 // END Payment Fieldset
+
+/* =================================================================================================
+Form
+================================================================================================= */
+const form = document.querySelector('form');
+const submitBtn = document.querySelector('button');
+
+const fieldsToCheck = [
+  infoFields.name,
+  infoFields.mail,
+  infoFields.otherTitle,
+  activitiesFieldset,
+  paymentState.creditCard.ccNum,
+  paymentState.creditCard.zip,
+  paymentState.creditCard.cvv,
+  paymentState.creditCard.expiration,
+];
+
+function validateField(fieldObj, textInput = true) {
+  if (fieldObj.isValid() && fieldObj.hasErr) {
+    fieldObj.elem.removeErr(fieldObj.id, fieldObj.labelElem);
+    fieldObj.hasErr = false;
+  } else if (!fieldObj.isValid() && !fieldObj.hasErr) {
+    fieldObj.elem.addErr(fieldObj.id, fieldObj.errMsg, fieldObj.labelElem, textInput);
+    fieldObj.hasErr = true;
+  }
+}
+
+function formInvalid() {
+  const invalidFields = fieldsToCheck.filter(fieldObj => fieldObj.hasErr);
+  return invalidFields.length > 0;
+}
+
+function validateForm() {
+  fieldsToCheck.forEach((fieldObj) => {
+    validateField(fieldObj, !(fieldObj.id === 'activities' || fieldObj.id === 'expiration'));
+  });
+  return formInvalid();
+}
+
+function toggleDisabledBtn() {
+  if (formInvalid()) {
+    submitBtn.setAttribute('disabled', '');
+  } else {
+    submitBtn.removeAttribute('disabled');
+  }
+}
+
+form.addEventListener('change', () => {
+  toggleDisabledBtn();
+});
+
+form.addEventListener('keyup', () => {
+  toggleDisabledBtn();
+});
+
+submitBtn.addEventListener('click', (e) => {
+  if (validateForm()) {
+    e.preventDefault();
+    toggleDisabledBtn();
+  }
+});
+// END Form

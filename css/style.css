@@ -113,6 +113,12 @@ button:hover {
   background: #184c62;
 }
 
+button:disabled {
+  background-color: #bdbdbd;
+  color: #fafafa;
+  cursor: no-drop;
+}
+
 .error-msg {
   color: #d32f2f;
   font-size: 0.8em;
