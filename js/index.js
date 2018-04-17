@@ -21,8 +21,7 @@ HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
   if (textInput) this.classList.add('error-input');
   // Create error msg
   const errDiv = document.createElement('div');
-  errDiv.classList.add('error-msg');
-  errDiv.setAttribute('data-field', id);
+  errDiv.classList.add('error-msg', id);
   errDiv.innerText = msg;
   return this.insertAdjacentElement('afterend', errDiv);
 };
@@ -30,7 +29,7 @@ HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
 HTMLElement.prototype.removeErr = function removeErr(id, label) {
   // Remove error classes
   label.classList.remove('error-label');
-  document.querySelector(`div[data-field=${id}`).remove();
+  document.querySelector(`div.error-msg.${id}`).remove();
   if (this.classList.contains('error-input')) this.classList.remove('error-input');
 };
 
@@ -59,7 +58,7 @@ const infoFields = {
     labelElem: document.querySelector('label[for="name"]'),
   },
   mail: {
-    id: 'name',
+    id: 'mail',
     elem: document.getElementById('mail'),
     isValid() {
       const regEx = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -70,7 +69,7 @@ const infoFields = {
     labelElem: document.querySelector('label[for="mail"]'),
   },
   otherTitle: {
-    id: 'name',
+    id: 'otherTitle',
     elem: document.getElementById('otherTitle'),
     isValid() {
       return this.elem.value.length > 0 && this.elem.value[0] !== ' ';
@@ -78,7 +77,7 @@ const infoFields = {
     hasErr: false,
     errMsg: 'This field cannot be blank, or begin with a space.',
     labelElem: document.querySelector('label[for="title"]'),
-    show: false,
+    active: false,
   },
 };
 
@@ -89,12 +88,12 @@ const titleSelect = document.getElementById('title');
 function updateTitleField(selectedOption) {
   const { otherTitle } = infoFields;
 
-  otherTitle.show = selectedOption === 'other';
-  otherTitle.elem.style = otherTitle.show ? 'display: block' : 'display: none';
+  otherTitle.active = selectedOption === 'other';
+  otherTitle.elem.style = otherTitle.active ? 'display: block' : 'display: none';
 
-  if (otherTitle.show === false && otherTitle.hasErr) {
+  if (otherTitle.active === false && otherTitle.hasErr) {
     otherTitle.elem.value = '';
-    otherTitle.elem.removeErr(otherTitle.labelElem);
+    otherTitle.elem.removeErr(otherTitle.id, otherTitle.labelElem);
     otherTitle.hasErr = false;
   }
 }
@@ -241,7 +240,7 @@ const paymentState = {
       },
       hasErr: false,
       errMsg: 'Please use a number between 13 and 16 digits.',
-      labelElem: document.querySelector('label[for=ccNum]'),
+      labelElem: document.querySelector('label[for="ccNum"]'),
     },
     zip: {
       id: 'zip',
@@ -252,7 +251,7 @@ const paymentState = {
       },
       hasErr: false,
       errMsg: 'Please use a 5 digit zipcode.',
-      labelElem: document.querySelector('label[for=zip]'),
+      labelElem: document.querySelector('label[for="zip"]'),
     },
     cvv: {
       id: 'cvv',
@@ -263,7 +262,7 @@ const paymentState = {
       },
       hasErr: false,
       errMsg: 'Please use a CVV that is 3 digits.',
-      labelElem: document.querySelector('label[for=cvv]'),
+      labelElem: document.querySelector('label[for="cvv"]'),
     },
     expiration: {
       id: 'expiration',
@@ -292,7 +291,28 @@ const paymentState = {
     selectorVal: 'credit card',
     active: true,
     isValid() {
-      return this.num.isValid() && this.zip.isValid() && this.cvv.isValid();
+      return this.ccNum.isValid() && this.zip.isValid() && this.cvv.isValid();
+    },
+    removeFieldErrors() {
+      if (this.ccNum.hasErr) {
+        this.ccNum.elem.removeErr(this.ccNum.id, this.ccNum.labelElem);
+        this.ccNum.elem.value = '';
+        this.ccNum.hasErr = false;
+      }
+      if (this.zip.hasErr) {
+        this.zip.elem.removeErr(this.zip.id, this.zip.labelElem);
+        this.zip.elem.value = '';
+        this.zip.hasErr = false;
+      }
+      if (this.cvv.hasErr) {
+        this.cvv.elem.removeErr(this.cvv.id, this.cvv.labelElem);
+        this.cvv.elem.value = '';
+        this.cvv.hasErr = false;
+      }
+      if (this.expiration.hasErr) {
+        this.expiration.elem.removeErr(this.expiration.id, this.expiration.labelElem);
+        this.expiration.hasErr = false;
+      }
     },
   },
   paypal: {
@@ -321,14 +341,19 @@ function updatePaymentState(selectedPayment = 'credit card') {
 // Simultaneously set payment selection to creadit card and update state
 updatePaymentState((paymentSelect.value = 'credit card'));
 
-creditCardFields.addEventListener('change', (e) => {
-  if (e.target.id === 'payment') {
-    const paymentSelection = e.target.value;
-    updatePaymentState(paymentSelection);
-  } else {
-    const { expiration } = paymentState.creditCard;
-    validateField(expiration, false);
+paymentSelect.addEventListener('change', (e) => {
+  const paymentSelection = e.target.value;
+  const { creditCard } = paymentState;
+  updatePaymentState(paymentSelection);
+
+  if (creditCard.active === false) {
+    creditCard.removeFieldErrors();
   }
+});
+
+creditCardFields.addEventListener('change', () => {
+  const { expiration } = paymentState.creditCard;
+  validateField(expiration, false);
 });
 
 creditCardFields.addEventListener('keyup', (e) => {
@@ -371,7 +396,9 @@ function formInvalid() {
 
 function validateForm() {
   fieldsToCheck.forEach((fieldObj) => {
-    validateField(fieldObj, !(fieldObj.id === 'activities' || fieldObj.id === 'expiration'));
+    if (fieldObj.active || fieldObj.active === undefined) {
+      validateField(fieldObj, !(fieldObj.id === 'activities' || fieldObj.id === 'expiration'));
+    }
   });
   return formInvalid();
 }
