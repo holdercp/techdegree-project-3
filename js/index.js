@@ -24,7 +24,7 @@ HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
   errDiv.classList.add('error-msg');
   errDiv.setAttribute('data-field', id);
   errDiv.innerText = msg;
-  return label.insertAdjacentElement('afterend', errDiv);
+  return this.insertAdjacentElement('afterend', errDiv);
 };
 
 HTMLElement.prototype.removeErr = function removeErr(id, label) {
@@ -164,7 +164,6 @@ const activitiesFieldset = {
   elem: document.querySelector('fieldset.activities'),
   selectedActivities: [],
   selectedDates: [],
-
   isValid() {
     return this.selectedActivities.length > 0;
   },
@@ -222,11 +221,11 @@ activitiesFieldset.elem.addEventListener('change', (e) => {
 
   const otherActivityInputs = getSiblings(
     [...activitiesFieldset.elem.querySelectorAll('input')],
-    activitiesFieldset.selectedActivities,
+    selectedActivities,
   );
 
   otherActivityInputs.forEach((activity) => {
-    activity.disabled = activitiesFieldset.selectedDates.includes(getActivityDate(activity.getNestedText()));
+    activity.disabled = selectedDates.includes(getActivityDate(activity.getNestedText()));
     if (activity.disabled) activity.checked = false;
   });
 
@@ -238,6 +237,7 @@ activitiesFieldset.elem.addEventListener('change', (e) => {
 /* =================================================================================================
 Payment Fieldset
 ================================================================================================= */
+const creditCardFields = document.getElementById('credit-card');
 const paymentSelect = document.getElementById('payment');
 const onlyDigits = /^\d+$/;
 
@@ -245,65 +245,68 @@ const paymentState = {
   creditCard: {
     id: 'credit-card',
     elem: document.getElementById('credit-card'),
-    num: {
-      elem: document.getElementById('cc-num'),
+    ccNum: {
+      id: 'ccNum',
+      elem: document.getElementById('ccNum'),
+      isValid() {
+        // Just checking for length and number, not actual validity
+        const num = this.elem.value;
+        return onlyDigits.test(num) && (num.length >= 13 && num.length <= 16);
+      },
       hasErr: false,
+      errMsg: 'Please use a number between 13 and 16 digits.',
+      labelElem: document.querySelector('label[for=ccNum]'),
     },
     zip: {
+      id: 'zip',
       elem: document.getElementById('zip'),
+      isValid() {
+        const code = this.elem.value;
+        return onlyDigits.test(code) && code.length === 5;
+      },
       hasErr: false,
+      errMsg: 'Please use a 5 digit zipcode.',
+      labelElem: document.querySelector('label[for=zip]'),
     },
     cvv: {
+      id: 'cvv',
       elem: document.getElementById('cvv'),
+      isValid() {
+        const cvv = this.elem.value;
+        return onlyDigits.test(cvv) && cvv.length === 3;
+      },
       hasErr: false,
+      errMsg: 'Please use a CVV that is 3 digits.',
+      labelElem: document.querySelector('label[for=cvv]'),
     },
     expiration: {
+      id: 'expiration',
+      elem: document.getElementById('expiration'),
       expMonthElem: document.getElementById('exp-month'),
       expYearElem: document.getElementById('exp-year'),
+      getFormattedDate() {
+        const monthOptions = this.expMonthElem.options;
+        const yearOptions = this.expYearElem.options;
+        const month = monthOptions[monthOptions.selectedIndex].value;
+        const year = yearOptions[yearOptions.selectedIndex].value;
+
+        return year + month;
+      },
+      isValid() {
+        const selectedDate = this.getFormattedDate();
+        const currentDate = new Date();
+        const currentDateFormatted =
+          currentDate.getFullYear().toString() + (currentDate.getMonth() + 1).toString();
+        return selectedDate >= currentDateFormatted;
+      },
       hasErr: false,
+      errMsg: 'Please select a date in the future.',
+      labelElem: document.querySelector('fieldset.payment > legend'),
     },
     selectorVal: 'credit card',
     active: true,
-    getDate() {
-      const monthOptions = this.expiration.expMonthElem.options;
-      const yearOptions = this.expiration.expYearElem.options;
-      const month = monthOptions[monthOptions.selectedIndex].value;
-      const year = yearOptions[yearOptions.selectedIndex].value;
-
-      return year + month;
-    },
-    isValidZip() {
-      const code = this.zip.elem.value;
-      return onlyDigits.test(code) && code.length === 5;
-    },
-    isValidNum() {
-      // Just checking for length and number, not actual validity
-      const num = this.num.elem.value;
-      return onlyDigits.test(num) && (num.length >= 13 && num.length <= 16);
-    },
-    isValidCvv() {
-      const cvv = this.cvv.elem.value;
-      return onlyDigits.test(cvv) && cvv.length === 3;
-    },
     isValid() {
-      return this.isValidZip() && this.isValidNum() && this.isValidCvv();
-    },
-    addErr(elem, msg) {
-      // Add error classes
-      elem.previousElementSibling.classList.add('error-label');
-      elem.classList.add('error-input');
-      // Create error msg
-      const errDiv = document.createElement('div');
-      errDiv.classList.add('error-msg');
-      errDiv.innerText = msg;
-      return elem.insertAdjacentElement('afterend', errDiv);
-    },
-    removeErr(elem) {
-      // Remove error classes
-      elem.previousElementSibling.classList.remove('error-label');
-      elem.classList.remove('error-input');
-      // Remove error msg
-      elem.nextElementSibling.remove();
+      return this.num.isValid() && this.zip.isValid() && this.cvv.isValid();
     },
   },
   paypal: {
@@ -320,12 +323,6 @@ const paymentState = {
   },
 };
 
-const zipInput = paymentState.creditCard.zip.elem;
-const numInput = paymentState.creditCard.num.elem;
-const cvvInput = paymentState.creditCard.cvv.elem;
-const expMonthSelect = paymentState.creditCard.expiration.expMonthElem;
-const expYearSelect = paymentState.creditCard.expiration.expYearElem;
-
 function updatePaymentState(selectedPayment = 'credit card') {
   Object.entries(paymentState).forEach((paymentType) => {
     // Object.entries creates an array with key, value so paymentType[1] contains the object we want
@@ -338,78 +335,18 @@ function updatePaymentState(selectedPayment = 'credit card') {
 // Simultaneously set payment selection to creadit card and update state
 updatePaymentState((paymentSelect.value = 'credit card'));
 
-paymentSelect.addEventListener('change', (e) => {
-  const paymentSelection = e.target.value;
-  updatePaymentState(paymentSelection);
-});
-
-zipInput.addEventListener('keyup', () => {
-  const { creditCard } = paymentState;
-  const { zip } = creditCard;
-  if (!creditCard.isValidZip() && !zip.hasErr) {
-    creditCard.addErr(zip.elem, 'Please use a 5 digit zipcode.');
-    zip.hasErr = true;
-  } else if (creditCard.isValidZip() && zip.hasErr) {
-    creditCard.removeErr(zip.elem);
-    zip.hasErr = false;
+creditCardFields.addEventListener('change', (e) => {
+  if (e.target.id === 'payment') {
+    const paymentSelection = e.target.value;
+    updatePaymentState(paymentSelection);
+  } else {
+    const { expiration } = paymentState.creditCard;
+    validateField(expiration, false);
   }
 });
 
-numInput.addEventListener('keyup', () => {
-  const { creditCard } = paymentState;
-  const { num } = creditCard;
-  if (!creditCard.isValidNum() && !num.hasErr) {
-    creditCard.addErr(num.elem, 'Please use a number between 13 and 16 digits.');
-    num.hasErr = true;
-  } else if (creditCard.isValidNum() && num.hasErr) {
-    creditCard.removeErr(num.elem);
-    num.hasErr = false;
-  }
-});
-
-cvvInput.addEventListener('keyup', () => {
-  const { creditCard } = paymentState;
-  const { cvv } = creditCard;
-  if (!creditCard.isValidCvv() && !cvv.hasErr) {
-    creditCard.addErr(cvv.elem, 'Please use a CVV that is 3 digits.');
-    cvv.hasErr = true;
-  } else if (creditCard.isValidCvv() && cvv.hasErr) {
-    creditCard.removeErr(cvv.elem);
-    cvv.hasErr = false;
-  }
-});
-
-expMonthSelect.addEventListener('change', (e) => {
-  const { creditCard } = paymentState;
-  const { expiration } = creditCard;
-  const selectedDate = paymentState.creditCard.getDate();
-  const currentDate = new Date();
-  const formattedDate =
-    currentDate.getFullYear().toString() + (currentDate.getMonth() + 1).toString();
-
-  if (selectedDate < formattedDate && !expiration.hasErr) {
-    creditCard.addErr(expiration.expMonthElem, 'Please select a date in the future.');
-    expiration.hasErr = true;
-  } else if (selectedDate >= formattedDate && expiration.hasErr) {
-    creditCard.removeErr(expiration.expMonthElem);
-    expiration.hasErr = false;
-  }
-});
-
-expYearSelect.addEventListener('change', (e) => {
-  const { creditCard } = paymentState;
-  const { expiration } = creditCard;
-  const selectedDate = paymentState.creditCard.getDate();
-  const currentDate = new Date();
-  const formattedDate =
-    currentDate.getFullYear().toString() + (currentDate.getMonth() + 1).toString();
-
-  if (selectedDate < formattedDate && !expiration.hasErr) {
-    creditCard.addErr(expiration.expMonthElem, 'Please select a date in the future.');
-    expiration.hasErr = true;
-  } else if (selectedDate >= formattedDate && expiration.hasErr) {
-    creditCard.removeErr(expiration.expMonthElem);
-    expiration.hasErr = false;
-  }
+creditCardFields.addEventListener('keyup', (e) => {
+  const fieldObj = paymentState.creditCard[e.target.id];
+  validateField(fieldObj);
 });
 // END Payment Fieldset
