@@ -19,8 +19,10 @@ HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
   // Add error classes
   label.classList.add('error-label');
   if (textInput) this.classList.add('error-input');
-  // Create error msg
+  // Create error msg that appears under elements
   const errDiv = document.createElement('div');
+  // Give it an id to hook onto for removal
+  // Don't use a data- attr to do this; safari complains
   errDiv.classList.add('error-msg', id);
   errDiv.innerText = msg;
   return this.insertAdjacentElement('afterend', errDiv);
@@ -29,10 +31,12 @@ HTMLElement.prototype.addErr = function addErr(id, msg, label, textInput) {
 HTMLElement.prototype.removeErr = function removeErr(id, label) {
   // Remove error classes
   label.classList.remove('error-label');
+  // Remove msg that was added
   document.querySelector(`div.error-msg.${id}`).remove();
   if (this.classList.contains('error-input')) this.classList.remove('error-input');
 };
 
+// Removes a specific elem from an array
 function removeFromArray(arr, elem) {
   const index = arr.indexOf(elem);
 
@@ -46,6 +50,7 @@ function removeFromArray(arr, elem) {
 Basic Info Fieldset
 ================================================================================================= */
 // Create field objects
+// Each will have its own validation method, error state/msg, and label element to use for errors
 const infoFields = {
   name: {
     id: 'name',
@@ -88,9 +93,11 @@ const titleSelect = document.getElementById('title');
 function updateTitleField(selectedOption) {
   const { otherTitle } = infoFields;
 
+  // Show "other" text input
   otherTitle.active = selectedOption === 'other';
   otherTitle.elem.style = otherTitle.active ? 'display: block' : 'display: none';
 
+  // If another selection is made, clear errors on "other" input so form will submit
   if (otherTitle.active === false && otherTitle.hasErr) {
     otherTitle.elem.value = '';
     otherTitle.elem.removeErr(otherTitle.id, otherTitle.labelElem);
@@ -98,7 +105,9 @@ function updateTitleField(selectedOption) {
   }
 }
 
+// Initial focus
 infoFields.name.elem.focus();
+// Simultaneously set title selection and update state
 updateTitleField((titleSelect.value = 'full-stack js developer'));
 
 basicInfoFieldset.addEventListener('keyup', (e) => {
@@ -155,6 +164,7 @@ const activitiesFieldset = {
   hasErr: false,
   errMsg: 'Please select at least one activity.',
 };
+// Add this later since we're not actually initializing the object (elem would be undefined)
 activitiesFieldset.labelElem = activitiesFieldset.elem.querySelector('legend');
 
 function getActivityDate(activityText) {
@@ -196,6 +206,7 @@ activitiesFieldset.elem.addEventListener('change', (e) => {
   const selectedActivityDate = getActivityDate(selectedActivity.getNestedText());
   const { selectedActivities, selectedDates } = activitiesFieldset;
 
+  // Keep track of selected activities and their dates
   if (selectedActivity.checked) {
     selectedActivities.push(selectedActivity);
     selectedDates.push(selectedActivityDate);
@@ -209,6 +220,7 @@ activitiesFieldset.elem.addEventListener('change', (e) => {
     selectedActivities,
   );
 
+  // Disable activities that share the same date as selected activities
   otherActivityInputs.forEach((activity) => {
     activity.disabled = selectedDates.includes(getActivityDate(activity.getNestedText()));
     if (activity.disabled) activity.checked = false;
@@ -226,6 +238,10 @@ const creditCardFields = document.getElementById('credit-card');
 const paymentSelect = document.getElementById('payment');
 const onlyDigits = /^\d+$/;
 
+// Payment object
+// Payment types
+// Credit card fields
+// Most state is managed in here
 const paymentState = {
   creditCard: {
     id: 'credit-card',
@@ -338,7 +354,7 @@ function updatePaymentState(selectedPayment = 'credit card') {
   });
 }
 
-// Simultaneously set payment selection to creadit card and update state
+// Simultaneously set payment selection to credit card and update state
 updatePaymentState((paymentSelect.value = 'credit card'));
 
 paymentSelect.addEventListener('change', (e) => {
@@ -346,6 +362,7 @@ paymentSelect.addEventListener('change', (e) => {
   const { creditCard } = paymentState;
   updatePaymentState(paymentSelection);
 
+  // Remove errors from credit card fields if it's not the selected payment
   if (creditCard.active === false) {
     creditCard.removeFieldErrors();
   }
@@ -379,6 +396,7 @@ const fieldsToCheck = [
   paymentState.creditCard.expiration,
 ];
 
+// Adds and removes errors based on the field's isValid() method
 function validateField(fieldObj, textInput = true) {
   if (fieldObj.isValid() && fieldObj.hasErr) {
     fieldObj.elem.removeErr(fieldObj.id, fieldObj.labelElem);
@@ -389,11 +407,13 @@ function validateField(fieldObj, textInput = true) {
   }
 }
 
+// Boolean if the form has any errors
 function formInvalid() {
   const invalidFields = fieldsToCheck.filter(fieldObj => fieldObj.hasErr);
   return invalidFields.length > 0;
 }
 
+// Runs validatation on all appropriate fields
 function validateForm() {
   fieldsToCheck.forEach((fieldObj) => {
     if (fieldObj.active || fieldObj.active === undefined) {
@@ -403,6 +423,7 @@ function validateForm() {
   return formInvalid();
 }
 
+// Diable submit button if form is invalid
 function toggleDisabledBtn() {
   if (formInvalid()) {
     submitBtn.setAttribute('disabled', '');
