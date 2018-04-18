@@ -249,6 +249,7 @@ const paymentState = {
     ccNum: {
       id: 'ccNum',
       elem: document.getElementById('ccNum'),
+      parent: 'creditCard',
       isValid() {
         // Just checking for length and number, not actual validity
         const num = this.elem.value;
@@ -261,6 +262,7 @@ const paymentState = {
     zip: {
       id: 'zip',
       elem: document.getElementById('zip'),
+      parent: 'creditCard',
       isValid() {
         const code = this.elem.value;
         return onlyDigits.test(code) && code.length === 5;
@@ -272,6 +274,7 @@ const paymentState = {
     cvv: {
       id: 'cvv',
       elem: document.getElementById('cvv'),
+      parent: 'creditCard',
       isValid() {
         const cvv = this.elem.value;
         return onlyDigits.test(cvv) && cvv.length === 3;
@@ -283,6 +286,7 @@ const paymentState = {
     expiration: {
       id: 'expiration',
       elem: document.getElementById('expiration'),
+      parent: 'creditCard',
       expMonthElem: document.getElementById('exp-month'),
       expYearElem: document.getElementById('exp-year'),
       getFormattedDate() {
@@ -385,11 +389,9 @@ Form
 const form = document.querySelector('form');
 const submitBtn = document.querySelector('button');
 
-const fieldsToCheck = [
-  infoFields.name,
-  infoFields.mail,
-  infoFields.otherTitle,
-  activitiesFieldset,
+const fieldsToCheck = [infoFields.name, infoFields.mail, infoFields.otherTitle, activitiesFieldset];
+
+const ccFieldsToCheck = [
   paymentState.creditCard.ccNum,
   paymentState.creditCard.zip,
   paymentState.creditCard.cvv,
@@ -410,14 +412,23 @@ function validateField(fieldObj, textInput = true) {
 // Boolean if the form has any errors
 function formInvalid() {
   const invalidFields = fieldsToCheck.filter(fieldObj => fieldObj.hasErr);
-  return invalidFields.length > 0;
+  const invalidCcFields = ccFieldsToCheck.filter(fieldObj => fieldObj.hasErr);
+  return invalidFields.length > 0 || invalidCcFields.length > 0;
 }
 
 // Runs validatation on all appropriate fields
 function validateForm() {
   fieldsToCheck.forEach((fieldObj) => {
     if (fieldObj.active || fieldObj.active === undefined) {
-      validateField(fieldObj, !(fieldObj.id === 'activities' || fieldObj.id === 'expiration'));
+      validateField(fieldObj, !(fieldObj.id === 'activities'));
+    }
+  });
+
+  // Validate credit card field separately to check to see if that is the selected form of payment
+  // Got outta control with my nested objects; need to keep learning better architecture
+  ccFieldsToCheck.forEach((fieldObj) => {
+    if (paymentState.creditCard.active) {
+      validateField(fieldObj, !(fieldObj.id === 'expiration'));
     }
   });
   return formInvalid();
